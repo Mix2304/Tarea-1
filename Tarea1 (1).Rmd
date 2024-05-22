@@ -1,0 +1,304 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(rio)
+data=import("datos_abiertos_vigilancia_dengue.csv")
+```
+
+```{r}
+summary(data$edad)
+```
+```{r}
+str(data)
+```
+```{r}
+library(dplyr)
+table(data$enfermedad)
+```
+
+
+```{r}
+data$enfermedad <- gsub("DENGUE CON SEÑALES DE ALARMA", "con", data$enfermedad)
+data$enfermedad <- gsub("DENGUE SIN SEÑALES DE ALARMA", "sin", data$enfermedad)
+data$enfermedad <- gsub("DENGUE GRAVE", "grave", data$enfermedad)
+```
+
+
+```{r}
+table(data$enfermedad)
+```
+
+En base a la población muestral podemos determinar que en la mayoría de casos (87458) sin señales de alarma, mientras que solo 411 son de condición grave. Por otro lado, cabe resaltar que no se ha encontrado ningún caso con señales de alarma.
+
+
+```{r}
+summary(data$edad)
+```
+
+Pregunta 1
+```{r}
+library(lsr)
+  EdadxYear = data |>
+  group_by(ano) |>
+  summarise(media = mean(edad, na.rm=T))
+EdadxYear
+```
+
+Gráfico
+
+```{r}
+library(ggplot2)
+library(ggthemes)
+library(ggplot2)
+
+EdadxYear$ano <- factor(EdadxYear$ano)
+
+ggplot(EdadxYear, aes(x = ano, y = media, group = 1)) +
+  geom_line(color = "black", size = 1.5) +
+  geom_point(color = "pink", size = 3) +  # Añadir puntos para resaltar los valores
+  labs(title = "Edad promedio de personas contagiadas de dengue por año",
+       x = "Año",
+       y = "Edad") +
+  theme_minimal(base_size = 15) +  # Usar un tema minimalista con un tamaño de fuente base de 15
+  theme(
+    legend.key.size = unit(1, "lines"),
+    plot.title = element_text(hjust = 0.5, face = "bold"),  # Centrar y poner en negrita el título
+    axis.title = element_text(face = "bold")  # Poner en negrita los títulos de los ejes
+  )
+
+```
+
+
+
+Pregunta 2
+
+```{r}
+pregunta2 <- data %>%
+  group_by(ano) %>%
+  summarise(
+    total_casos = n(),
+    graves = sum(enfermedad == "grave"),
+    sin_señales = sum(enfermedad == "sin"),
+    con_señales = sum(enfermedad == "con")
+  ) 
+```
+
+
+Grafico
+
+```{r}
+library(ggplot2)
+
+pregunta2$ano <- factor(pregunta2$ano)
+
+grafico_total <- ggplot(pregunta2, aes(x = ano, y = total_casos, group = 1)) +
+  geom_line() +
+  labs(title = "Total de casos de Dengue a lo largo de los años",
+       x = "Año",
+       y = "Total de casos") +
+  theme_minimal()
+
+grafico_con_alarma <- ggplot(pregunta2, aes(x = ano, y = con_señales, group = 1)) +
+  geom_line() +
+  labs(title = "Casos de Dengue con Alarma a lo largo de los años",
+       x = "Año",
+       y = "Casos con Alarma") +
+  theme_minimal()
+
+grafico_sin_alarma <- ggplot(pregunta2, aes(x = ano, y = sin_señales, group = 1)) +
+  geom_line() +
+  labs(title = "Casos de Dengue sin Alarma a lo largo de los años",
+       x = "Año",
+       y = "Casos sin Alarma") +
+  theme_minimal()
+
+grafico_graves <- ggplot(pregunta2, aes(x = ano, y = graves, group = 1)) +
+  geom_line() +
+  labs(title = "Casos de Dengue Graves a lo largo de los años",
+       x = "Año",
+       y = "Casos Graves") +
+  theme_minimal()
+
+# Mostrar los gráficos por separado
+print(grafico_total)
+print(grafico_con_alarma)
+print(grafico_sin_alarma)
+print(grafico_graves)
+
+
+```
+
+Pregunta 4
+
+```{r}
+
+pregunta4 <- data %>%
+  group_by(departamento, provincia, ano) %>%
+  summarize(
+    con_alarma = sum(enfermedad == "con"),
+    sin_alarma = sum(enfermedad == "sin"),
+    graves = sum(enfermedad == "graves")
+  )
+
+# Mostrar los primeros registros de la base de datos resumida
+head(pregunta4)
+```
+
+Ahora añadiré el total
+```{r}
+pregunta4 <- pregunta4 %>%
+  mutate(total_contagios = con_alarma + sin_alarma + graves)
+head(pregunta4)
+```
+
+Data nueva completa ahora sí todo
+
+```{r}
+provyear <- pregunta4 %>%
+  group_by(departamento, provincia) %>%
+  summarise(total_historico = sum(total_contagios))
+```
+
+```{r}
+summary(provyear$total_historico)
+```
+
+Puesto que la media es 1138, los datos que estén por encima de dicha media serán
+consideradas muy altas
+
+```{r}
+provyear=filter(provyear, total_historico>4499.2)
+```
+
+Gráfico de puntos
+```{r}
+library(ggplot2)
+
+# Crear el gráfico de puntos
+grafico <- ggplot(provyear, aes(x = departamento, y = total_historico, label = provincia)) +
+  geom_point(color = "red", size = 3) +  # Puntos rojos
+  geom_text(size = 4, vjust = -0.5) +  # Etiquetas con un tamaño y alineación vertical adecuados
+  labs(title = "Provincias con mayor número de casos de dengue",  # Título del gráfico
+       x = "Departamentos", y = "Total de casos") +  # Etiquetas de los ejes
+  theme_gray() +  # Estilo gris
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),  # Alinear título al centro y en negrita
+        plot.margin = unit(c(0.8, 0.8, 0.8, 0.8), "cm"))  # Márgenes del gráfico
+
+print(grafico)
+
+```
+
+Pregunta 5
+
+A continuación se realizará una suma de todos los datos de los departamentos para realizar el gráfico de calor 
+```{r}
+table(data$departamento)
+```
+Según los datos registrados, se tienen los datos de 22 departamentos y el resto son valores desconocidos
+
+Procederemos a limpiar para después crear
+```{r}
+pregunta5 <- data %>% filter_all(all_vars(. != "\\N"))
+table(pregunta5$departamento)
+```
+
+Creación de la data
+```{r}
+pregunta5 <- pregunta5 %>%
+  group_by(departamento) %>%
+  summarise(
+    total_casos = n(),
+    graves = sum(enfermedad == "grave"),
+    sin_señales = sum(enfermedad == "sin"),
+    con_señales = sum(enfermedad == "con")
+  ) 
+head(pregunta5)
+```
+
+Analizamos la relación entre los casos alarmantes no graves y los asintomaticos segun departamento a lo largo de los años. Para ello se debe tener en cuenta que en la base de datos significa la variable es entre los "con" y entre los "sin"
+
+```{r}
+pregunta5 <- pregunta5 %>%
+  mutate(relacion = con_señales/sin_señales)
+pregunta5=select(pregunta5, c(1,6))
+head(pregunta5)
+```
+
+Como no existen los casos con alarmas no graves, la relación con lo asintomáticos es de 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
