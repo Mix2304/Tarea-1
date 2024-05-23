@@ -1,0 +1,89 @@
+---
+title: "Tarea 4"
+Nombre: "Ximena Ynga Helguero"
+Código: 20190733
+---
+
+```{r}
+library(rio)
+trumpFiles= import("trumps.csv")
+```
+
+```{r}
+library(tm)
+library(wordcloud)
+library(igraph)
+
+
+trumpFile <- file.path("textData", "trumps.csv")
+textFile <- file.path("textData", "sometext.txt")
+
+
+allTweets <- read.csv(trumpFile)
+```
+
+
+```{r}
+DTtweets <- allTweets[!allTweets$is_retweet, ]
+DTtweets <- DTtweets[, -1] 
+
+
+DTtweets$text <- word_tokenize(DTtweets$text)
+```
+
+
+```{r}
+DTtweets$text <- tolower(DTtweets$text)
+DTtweets$text <- removePunctuation(DTtweets$text)
+
+STOPS <- stopwords("en")
+DTtweets$text <- DTtweets$text[!DTtweets$text %in% STOPS]
+```
+
+
+```{r}
+hist(table(DTtweets$text), log = "y", main = "Word Frequency", xlab = "Frequency", ylab = "Log Frequency")
+
+
+FrequencyTrumpTokens <- table(DTtweets$text)
+wordcloud(names(FrequencyTrumpTokens), freq = FrequencyTrumpTokens, scale = c(5, 0.5), min.freq = 6, random.order = FALSE, colors = brewer.pal(8, "Dark2"))
+```
+
+
+```{r}
+allText <- readLines(textFile)
+
+allText <- tolower(allText)
+allText <- gsub("[[:punct:]]", "", allText)
+```
+
+
+```{r}
+theBigrams <- lapply(allText, function(x) {
+  unlist(ngrams(words(x), 2))
+})
+
+pairWords <- unlist(theBigrams)
+```
+
+
+```{r}
+pairWords_clean <- pairWords[!sapply(pairWords, function(x) any(x %in% STOPS))]
+
+bigramsCount <- table(pairWords_clean)
+```
+
+
+```{r}
+G_bigram <- graph_from_data_frame(as.data.frame(bigramsCount), directed = FALSE)
+plot(G_bigram)
+
+bigramsCount_wgte_3 <- bigramsCount[bigramsCount >= 3]
+```
+
+
+```{r}
+G_bigram_wgte_3 <- graph_from_data_frame(as.data.frame(bigramsCount_wgte_3), directed = FALSE)
+plot(G_bigram_wgte_3)
+```
+
