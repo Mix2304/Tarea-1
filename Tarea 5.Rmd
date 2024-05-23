@@ -1,0 +1,79 @@
+---
+title: "Tarea 5"
+output: html_notebook
+Nombre: "Ximena Ynga Helguero"
+Código: 20190733
+---
+
+```{r}
+library(rio)
+Migrar=import("Base tarea 5 (3).xlsx")
+```
+
+```{r}
+library(readxl)
+idioma <- read_excel("Base tarea 5 (3).xlsx", sheet = "idioma")
+costo_de_vida <- read_excel("Base tarea 5 (3).xlsx", sheet = "costo de vida")
+encontrar_empleo <- read_excel("Base tarea 5 (3).xlsx", sheet = "encontrar empleo")
+```
+
+
+```{r}
+criterios <- as.matrix(idioma[, -1])
+criterios <- criterios / rowSums(criterios)
+```
+
+
+```{r}
+pesos_criterios <- colMeans(criterios)
+print("Pesos de criterios:")
+print(pesos_criterios)
+
+# Definir las matrices de comparación de alternativas
+```
+
+
+```{r}
+alternativas <- list(
+"costo_de_vida" = as.matrix(costo_de_vida[, -1]),
+ "encontrar_empleo" = as.matrix(encontrar_empleo[, -1])
+)
+```
+
+
+```{r}
+pesos_alternativas <- sapply(alternativas, function(m) {
+  m / rowSums(m)
+})
+```
+
+
+```{r}
+pesos_global_alternativas <- apply(pesos_alternativas, 1, mean)
+puntajes_globales <- pesos_global_alternativas * pesos_criterios
+```
+
+
+```{r}
+print("Pesos de criterios:")
+print(pesos_criterios)
+print("Pesos de alternativas para cada criterio:")
+print(pesos_alternativas)
+print("Pesos globales de alternativas:")
+print(pesos_global_alternativas)
+print("Puntajes globales de alternativas:")
+print(puntajes_globales)
+```
+
+```{r}
+resultados <- data.frame(
+  Criterios = names(pesos_criterios),
+  Pesos_Criterios = pesos_criterios,
+  Pesos_Globales_Alternativas = pesos_global_alternativas,
+  Puntajes_Globales_Alternativas = puntajes_globales
+)
+
+print("Resultados finales:")
+print(resultados)
+```
+
